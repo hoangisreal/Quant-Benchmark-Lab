@@ -62,6 +62,7 @@ There is currently no configured type checker or numerical coverage threshold.
 CI requires a present, fresh `uv.lock`, installs it with Python 3.11 and frozen resolution,
 then runs lint, the offline suite and a CLI demonstration including resume. A missing or
 stale lock fails before installation; CI never resolves a replacement lock or downloads weights.
+Actions are pinned to immutable commits using Node 24, with uv 0.12.17 and Python 3.11.
 Remote CI success must be checked on the actual commit, not inferred from local results.
 
 ## Contributions and local files
