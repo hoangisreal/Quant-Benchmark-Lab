@@ -45,6 +45,16 @@ def executable_identity(binary: str) -> dict:
     }
 
 
+def payload_identity(root: Path) -> dict:
+    """Pin native serving code, including shared libraries behind thin launchers."""
+    if not root.is_dir():
+        raise ValueError(f"native payload directory missing: {root}")
+    files = {str(p.relative_to(root)): file_hash(p) for p in sorted(root.rglob("*")) if p.is_file()}
+    if not files:
+        raise ValueError(f"native payload directory is empty: {root}")
+    return {"root": str(root.resolve()), "files": files, "sha256": digest(files)}
+
+
 def capture_environment(
     ollama: str = "ollama", llama: str = "llama-server", toolchain: str | None = None
 ) -> dict:

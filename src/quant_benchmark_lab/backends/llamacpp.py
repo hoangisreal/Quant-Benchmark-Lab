@@ -47,6 +47,8 @@ class LlamaCppBackend:
             self.cell.model.path,
             "--host",
             "127.0.0.1",
+            "--log-verbosity",
+            "4",
             "--port",
             str(rt.llama_port),
             "--ctx-size",
@@ -116,7 +118,7 @@ class LlamaCppBackend:
 
     def inspect(self) -> dict:
         log = self.server.log_text()
-        matches = re.findall(r"n_ctx_per_seq\s*=\s*(\d+)", log)
+        matches = re.findall(r"\bn_ctx_(?:per_)?seq\s*=\s*(\d+)", log)
         actual = int(matches[-1]) if matches else None
         return {
             **offload_evidence(log),

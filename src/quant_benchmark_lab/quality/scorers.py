@@ -5,13 +5,14 @@ import math
 import re
 from decimal import Decimal
 
-SCORER_VERSION = "1.0.0"
+SCORER_VERSION = "1.0.1"
 NUMBER = re.compile(r"[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?")
 
 
 def same_json(left, right):
     def numeric(value):
-        return isinstance(value, (int, float)) and not isinstance(value, bool)
+        return isinstance(value, (int, float, Decimal)) and not isinstance(value, bool)
+
     if numeric(left) and numeric(right):
         return Decimal(str(left)) == Decimal(str(right))
     if type(left) is not type(right):
@@ -19,8 +20,9 @@ def same_json(left, right):
     if isinstance(left, dict):
         return left.keys() == right.keys() and all(same_json(left[k], right[k]) for k in left)
     if isinstance(left, list):
-        return len(left) == len(right) and all(same_json(a, b)
-            for a, b in zip(left, right, strict=True))
+        return len(left) == len(right) and all(
+            same_json(a, b) for a, b in zip(left, right, strict=True)
+        )
     return left == right
 
 
@@ -33,7 +35,11 @@ def score(output: str, answer: dict) -> dict:
         passed = normalized == str(expected)
     elif kind == "numeric":
         if not NUMBER.fullmatch(normalized):
-            return {"score": 0.0, "normalized": normalized, "reason": "invalid/ambiguous numeric format"}
+            return {
+                "score": 0.0,
+                "normalized": normalized,
+                "reason": "invalid/ambiguous numeric format",
+            }
         value = float(normalized)
         if not math.isfinite(value):
             return {"score": 0.0, "normalized": normalized, "reason": "nonfinite number"}
@@ -43,6 +49,7 @@ def score(output: str, answer: dict) -> dict:
         passed = abs(actual - target) <= max(absolute, relative * max(abs(actual), abs(target)))
         normalized = value
     elif kind == "json":
+
         def unique(pairs):
             d = {}
             for k, v in pairs:
@@ -58,14 +65,24 @@ def score(output: str, answer: dict) -> dict:
             return value
 
         try:
-            value = json.loads(normalized, object_pairs_hook=unique,
-                               parse_float=finite_float,
-                               parse_constant=lambda s: (_ for _ in ()).throw(ValueError(s)))
+            value = json.loads(
+                normalized,
+                object_pairs_hook=unique,
+                parse_float=finite_float,
+                parse_constant=lambda s: (_ for _ in ()).throw(ValueError(s)),
+            )
         except (json.JSONDecodeError, ValueError):
             return {"score": 0.0, "normalized": normalized, "reason": "invalid JSON format"}
         # JSON numeric values 1 and 1.0 are equivalent; booleans are a different type.
-        passed = same_json(value, expected)
+        # Compare original decimal literals, before binary-float rounding or underflow.
+        # Keep the existing JSON-serializable normalized display value above.
+        exact_value = json.loads(output.strip(), parse_float=Decimal)
+        passed = same_json(exact_value, expected)
         normalized = value
     else:
         raise ValueError(f"unknown scorer: {kind}")
-    return {"score": float(passed), "normalized": normalized, "reason": "correct" if passed else "incorrect"}
+    return {
+        "score": float(passed),
+        "normalized": normalized,
+        "reason": "correct" if passed else "incorrect",
+    }

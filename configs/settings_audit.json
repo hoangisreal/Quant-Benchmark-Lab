@@ -1,0 +1,67 @@
+{
+  "ollama": {
+    "reviewed": true,
+    "binary_sha256": "8fd655c8fde7b524dc3a64ae1006f9e8d0344dec93b1796fc9f87b7c5179fbb9",
+    "source_references": [
+      "https://github.com/ollama/ollama/blob/b0c1ca4f7549d7acdfa52a7dcffc934bc63a43ce/llm/llama_server.go#L1654",
+      "https://github.com/ggml-org/llama.cpp/blob/6f767fe960c3b97cf37fac4626c86400561ca1e4/common/common.h#L223",
+      "https://github.com/ggml-org/llama.cpp/blob/6f767fe960c3b97cf37fac4626c86400561ca1e4/common/sampling.cpp#L340",
+      "https://github.com/ollama/ollama/blob/b0c1ca4f7549d7acdfa52a7dcffc934bc63a43ce/llm/server.go#L109",
+      "https://github.com/ollama/ollama/blob/b0c1ca4f7549d7acdfa52a7dcffc934bc63a43ce/llm/llama_server.go#L397",
+      "https://github.com/ollama/ollama/blob/b0c1ca4f7549d7acdfa52a7dcffc934bc63a43ce/llm/llama_server.go#L584",
+      "https://github.com/ollama/ollama/blob/b0c1ca4f7549d7acdfa52a7dcffc934bc63a43ce/llm/llama_server.go#L806",
+      "https://github.com/ggml-org/llama.cpp/blob/6f767fe960c3b97cf37fac4626c86400561ca1e4/common/common.h#L372",
+      "https://github.com/ollama/ollama/blob/b0c1ca4f7549d7acdfa52a7dcffc934bc63a43ce/server/routes.go#L545",
+      "https://github.com/ollama/ollama/blob/b0c1ca4f7549d7acdfa52a7dcffc934bc63a43ce/llm/llama_server.go#L246",
+      "https://github.com/ggml-org/llama.cpp/blob/6f767fe960c3b97cf37fac4626c86400561ca1e4/tools/server/server-common.cpp#L867",
+      "https://github.com/ollama/ollama/blob/b0c1ca4f7549d7acdfa52a7dcffc934bc63a43ce/server/routes.go#L703",
+      "https://github.com/ollama/ollama/blob/b0c1ca4f7549d7acdfa52a7dcffc934bc63a43ce/server/sched.go#L1422",
+      "https://github.com/ollama/ollama/blob/b0c1ca4f7549d7acdfa52a7dcffc934bc63a43ce/llm/llama_server.go#L282"
+    ],
+    "review_details": {
+      "samplers": "Greedy temperature=0, top_k=1, top_p=1, min_p=0, seed explicit; repeat/frequency/presence disabled. Bundled default typical_p=1, DRY/XTC/dynatemp disabled, mirostat=0.",
+      "kv_f16": "Explicit OLLAMA_KV_CACHE_TYPE=f16 maps to both K and V launch flags; FLASH_ATTENTION=0 resolves off.",
+      "batch": "num_batch maps to both -b and -ub; schema requires equal batch and microbatch for real Ollama cells, currently128. Explicit parallel1/context/threads.",
+      "no_speculation": "draft_num_predict=0 prevents draft-type CLI flags, bundled default speculative type NONE; GGUF-only import has no draft model.",
+      "bos_policy": "raw preserves rendered text for Qwen with no added BOS metadata; native completion/tokenizer parse special tokens. Must additionally prove model token counts against reference IDs.",
+      "truncate_disabled": "Preload and requests pass truncate=false shift=false, preventing context-shift reload. Bundled fit off; fixed raw/template inputs within context. Server rejects oversized inputs."
+    },
+    "samplers": true,
+    "kv_f16": true,
+    "batch": true,
+    "no_speculation": true,
+    "bos_policy": true,
+    "truncate_disabled": true,
+    "review_method": "Coding-agent source inspection at immutable revisions; human review not claimed; runtime probes required"
+  },
+  "llamacpp": {
+    "reviewed": true,
+    "binary_sha256": "9a5e7ec4709a0e95100eef311829bee0fa93643998c770dce0c1ec5ee223691c",
+    "source_references": [
+      "https://github.com/ggml-org/llama.cpp/blob/b92761a515ea31e852e7fbc1fad5f874b46f3718/common/sampling.cpp#L340",
+      "https://github.com/ggml-org/llama.cpp/blob/b92761a515ea31e852e7fbc1fad5f874b46f3718/src/llama-context.cpp#L390",
+      "https://github.com/ggml-org/llama.cpp/blob/b92761a515ea31e852e7fbc1fad5f874b46f3718/common/arg.cpp#L2415",
+      "https://github.com/ggml-org/llama.cpp/blob/b92761a515ea31e852e7fbc1fad5f874b46f3718/src/llama-context.cpp#L310",
+      "https://github.com/ggml-org/llama.cpp/blob/b92761a515ea31e852e7fbc1fad5f874b46f3718/common/arg.cpp#L1640",
+      "https://github.com/ggml-org/llama.cpp/blob/b92761a515ea31e852e7fbc1fad5f874b46f3718/common/arg.cpp#L4264",
+      "https://github.com/ggml-org/llama.cpp/blob/b92761a515ea31e852e7fbc1fad5f874b46f3718/tools/server/server-common.cpp#L867",
+      "https://github.com/ggml-org/llama.cpp/blob/b92761a515ea31e852e7fbc1fad5f874b46f3718/tools/server/server-context.cpp#L5309",
+      "https://github.com/ggml-org/llama.cpp/blob/b92761a515ea31e852e7fbc1fad5f874b46f3718/common/arg.cpp#L1741"
+    ],
+    "review_details": {
+      "samplers": "Explicit sampler list top_k/top_p/min_p/temperature; greedy settings; mirostat0, DRY/XTC/dynatemp disabled, penalties neutral. Source stats generation steps exclude first prefill sample.",
+      "kv_f16": "Explicit f16 K and V, flash off; GPU/CPU KV placement explicit.",
+      "batch": "Explicit batch128/ubatch128/context4096/threads/threads-batch; parallel1, split none, fit off; native n_ctx_seq log audited. Must prove effective context by runtime probe.",
+      "no_speculation": "--spec-type none; no draft files/configuration. Only non-speculative MVP.",
+      "bos_policy": "Raw /completion uses native mixed tokenization with special tokens; reference /tokenize sets add_special/parse_special true; model metadata determines BOS.",
+      "truncate_disabled": "--no-context-shift and fit off; reference checks prompt plus budget within context, native oversized input rejects. Prefix eviction with cache-ram0 preserves uncached work."
+    },
+    "samplers": true,
+    "kv_f16": true,
+    "batch": true,
+    "no_speculation": true,
+    "bos_policy": true,
+    "truncate_disabled": true,
+    "review_method": "Coding-agent source inspection at immutable revisions; human review not claimed; runtime probes required"
+  }
+}

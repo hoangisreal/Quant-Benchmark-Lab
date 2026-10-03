@@ -1,85 +1,83 @@
 # Quant Benchmark Lab
 
-A single-machine streaming benchmark harness for small GGUF models on an RTX 3050 4GB.
-It keeps quantization, serving-engine and model experiments separate, and records raw HTTP
-events, native timings, token counts, settings, source identities and GPU telemetry.
+A reproducible, single-machine benchmark harness for small GGUF language models on an
+**RTX 3050 4GB**. It measures objective quality, streaming latency, inference throughput
+and GPU memory while keeping three experiments separate:
 
-## Current status
+| Experiment | Changes | Held constant |
+|---|---|---|
+| Quantization | F16, Q8_0, Q4_K_M | Qwen2.5-0.5B, llama.cpp |
+| Engine | Ollama, llama.cpp | The same Qwen2.5-1.5B Q4_K_M GGUF, rendered prompts and generation profile |
+| Model | Qwen2.5-0.5B/1.5B/3B, Qwen3-4B | llama.cpp, Q4_K_M and task text |
 
-The mock/CPU harness is implemented and tested. Real engine integration and official GPU
-campaigns still need the lab environment. Python dependencies are locked in `uv.lock`;
-local Ruff checks and the offline suite pass (71 tests passed, 2 hardware tests skipped).
-Pinned serving engines, GGUF artifacts and a passing GPU preflight remain required.
-**No measured LLM benchmark results are claimed.**
+The Python harness and synthetic workflow are implemented. Dependencies are locked in
+`uv.lock`; the current candidate pair has passed real CPU integration locally. Each lab
+still needs local artifact preparation and passing GPU preflights before official campaigns.
+**No official GPU benchmark results are published here.**
+The 4B candidate has not yet been established as a valid near-limit fit on the target GPU.
 
-The nine findings from the initial audit have code fixes and offline regression coverage;
-see [audit fixes and storage compatibility](docs/AUDIT_FIXES_2026-10-03.md).
+## Start here
 
-See [implementation status](docs/IMPLEMENTATION_STATUS.md),
-[execution plan](docs/IMPLEMENTATION_PLAN.md), [methodology](docs/methodology.md) and
-[reproduction instructions](docs/reproduction.md).
-
-## Install
-
-Python 3.11 is the reference interpreter. Install the locked dependencies:
+Use Linux and Python 3.11. Install [uv](https://docs.astral.sh/uv/getting-started/installation/)
+and Git, then run the following from a terminal. Existing checkouts can start at `uv sync`.
 
 ```bash
-uv sync --frozen --group dev
+git clone https://github.com/hoangisreal/Quant-Benchmark-Lab.git
+cd Quant-Benchmark-Lab
+uv sync --frozen --python 3.11 --group dev
+uv run --frozen qbl validate --config configs/demo.yaml
 ```
 
-Keep `uv.lock` in version control. Run `uv lock` only when intentionally updating the dependency
-resolution, then review the changes. GPU telemetry uses `nvidia-ml-py`; CPU/mock tests do not require NVML or CUDA.
-The heavyweight conversion dependencies are isolated in the `prepare` group.
+Continue with the [complete synthetic walkthrough](docs/guides/getting-started.md). It runs
+planning, inference fixtures, scoring, reporting and integrity checks without CUDA or model
+downloads. Synthetic numbers demonstrate the harness and cannot establish model performance.
 
-## Run the synthetic demonstration
+## Documentation: installation to results
 
-```bash
-uv run qbl doctor --output /tmp/qbl-environment.json
-uv run qbl validate --config configs/demo.yaml
-uv run qbl plan --config configs/demo.yaml --output /tmp/qbl-schedule.json
-uv run qbl run --schedule /tmp/qbl-schedule.json --campaign results/raw/demo
-uv run qbl evaluate --campaign results/raw/demo
-uv run qbl report --campaign results/raw/demo --output reports/demo
-uv run qbl audit --campaign results/raw/demo
+The [documentation index](docs/README.md) contains the full reading order and
+[audit/research findings](docs/reviews/2026-10-03.md).
+
+| Step | Guide | Outcome |
+|---|---|---|
+| 1 | [Getting started](docs/guides/getting-started.md) | Installed environment and a complete synthetic report |
+| 2 | [Methodology](docs/reference/methodology.md) | Understand timing, cache control, quality scoring and validity gates |
+| 3 | [Toolchain and model preparation](docs/guides/toolchain.md) | Pinned binaries, reviewed settings and local GGUF artifacts |
+| — | [Engine compatibility](docs/reference/engine-compatibility.md) | Candidate revisions, source evidence and remaining runtime probes |
+| 4 | [Reproduce a real campaign](docs/guides/reproduction.md) | CPU integration, GPU pilot, frozen configuration and official runs |
+| 5 | [Read and preserve results](docs/guides/results.md) | Interpret reports, inspect failures and regenerate from raw data |
+| 6 | [Limitations](docs/reference/limitations.md) | Know which conclusions the measurements support |
+| — | [Troubleshooting](docs/guides/troubleshooting.md) | Diagnose installation, preflight, resume and reporting failures |
+| — | [Development](docs/development.md) | Architecture, configuration, tests and contribution workflow |
+
+## Measurements
+
+Each campaign records load time, client-observed streaming TTFT, native prefill/decode
+rates, end-to-end latency, input/output token counts, and idle/loaded/peak VRAM.
+Cold and warm runs remain separate; warmups are excluded. Reports preserve per-prompt
+groups and show mean, median, sample standard deviation and failure counts.
+
+Quality uses 60 project-authored exact-match, numeric and JSON tasks. It is a narrow
+objective suite, not a general model ranking. Missing metrics remain missing, with reasons
+in raw records. Official runs require verified artifacts and a passing preflight bound to
+the datasets, configuration and environment.
+
+## Repository layout
+
+```text
+src/quant_benchmark_lab/   CLI, backends, runner, storage, monitoring, scoring, reporting
+configs/                  Runtime, generation, protocol and experiment matrices
+scripts/                  Engine build, toolchain pinning and model preparation
+data/                     Performance prompts, quality questions and separate answer keys
+locks/                    Toolchain, model and workload provenance
+tests/                    Unit, streaming contract, campaign and opt-in hardware checks
+docs/guides/              Installation, preparation, campaigns, results, troubleshooting
+docs/reference/           Methodology, engine compatibility, limitations
+docs/reviews/             Public audit and research summaries
+results/raw/              Local campaign data (generated directories ignored)
+reports/                  Local reports and figures (generated directories ignored)
 ```
 
-Use a new campaign path on each new run, or `--resume` for the same unchanged schedule. Demo
-outputs and every figure are labeled **SYNTHETIC**. The fake backend emits fixture text and
-clock/memory observations; its quality scores and speeds are not measurements of Qwen.
-
-## Project structure
-
-- `src/quant_benchmark_lab/`: strict configuration/schema, backend adapters, runner, monitor,
-  objective scorers and offline reporting.
-- `configs/experiments/`: E1 quantization, E2 engine and E3 model matrices; all initially draft.
-- `scripts/`: explicit-commit build, binary pinning and source-to-GGUF preparation.
-- `data/`: six performance prompts and 60 project-authored quality items; answer keys are separate.
-- `locks/`: toolchain/artifact/workload provenance. Unresolved locks block real campaigns.
-- `tests/`: methodology unit tests, HTTP streaming contracts, fake campaigns and opt-in hardware tests.
-- `results/raw/<campaign>/`: immutable metadata, append-only attempts, native payloads and traces.
-- `reports/<campaign>/`: CSV, Markdown and standalone SVG; PNG export when Matplotlib is installed.
-
-## Tests
-
-```bash
-uv run python -m unittest discover -s tests -v
-uv run ruff check .
-uv run ruff format .
-```
-
-Tests use standard-library `unittest` and are also discoverable by pytest. Default tests are offline;
-real engine tests require `QBL_CPU_CONFIG`, and RTX 3050 tests require `QBL_GPU_CONFIG`. Hardware
-tests skip explicitly when these variables are absent. CI runs the offline tests and a CLI demo.
-
-## Real benchmark workflow
-
-Install the target NVIDIA driver/CUDA toolchain and Ollama on the lab host; build llama.cpp at
-an explicit commit, pin binary identities, prepare GGUFs, review the source audit, then run
-preflight separately for each experiment. A passing preflight is required to freeze an official
-configuration. [Reproduction instructions](docs/reproduction.md) give the complete sequence.
-
-Reports preserve cold/warm and prompt strata. TTFT is first streamed content at the client;
-prefill throughput counts uncached evaluated tokens; load timing is stored once per session.
-Objective quality is intentionally a small task suite. See [limitations](docs/limitations.md)
-before drawing conclusions about model capability or engine performance.
-# Quant-Benchmark-Lab
+For development checks, see [Development](docs/development.md). Large weights, local raw
+campaigns and internal agent notes are excluded from Git; public guides are self-contained.
+Machine-specific toolchain/model locks and frozen configurations stay local; see
+[configuration](configs/README.md) and [lock provenance](locks/README.md).

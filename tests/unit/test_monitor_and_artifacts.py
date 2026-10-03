@@ -5,9 +5,13 @@ import uuid
 from pathlib import Path
 from unittest.mock import patch
 
-from quant_benchmark_lab.artifacts import verify_artifacts, verify_model
+from quant_benchmark_lab.artifacts import verify_artifacts, verify_model, verify_payload
 from quant_benchmark_lab.config import load_config, yaml_read
-from quant_benchmark_lab.environment import capture_environment, environment_identity
+from quant_benchmark_lab.environment import (
+    capture_environment,
+    environment_identity,
+    payload_identity,
+)
 from quant_benchmark_lab.monitoring.gpu import GPULock, GPUMonitor
 from quant_benchmark_lab.utils import FakeClock
 
@@ -26,6 +30,7 @@ class MonitorAndIntegrityTests(unittest.TestCase):
             first.close()
         second.acquire()
         second.close()
+
     def test_peak_scope_and_idle_median(self):
         clock = FakeClock()
         monitor = GPUMonitor(clock, 20, synthetic=True)
@@ -58,10 +63,38 @@ class MonitorAndIntegrityTests(unittest.TestCase):
 
     def test_unresolved_real_artifact_cannot_run(self):
         config = load_config(ROOT / "configs/experiments/engine.yaml")
+        with tempfile.TemporaryDirectory() as directory:
+            lock = Path(directory) / "toolchain.json"
+            lock.write_text(json.dumps({"state": "unresolved"}))
+            config.runtime.toolchain_lock = str(lock)
+            with self.assertRaises(ValueError):
+                verify_artifacts(config)
+        unresolved = config.cells[0].model.model_copy(update={"sha256": None})
         with self.assertRaises(ValueError):
-            verify_artifacts(config)
-        with self.assertRaises(ValueError):
-            verify_model(config.cells[0].model)
+            verify_model(unresolved)
+
+    def test_unchanged_launcher_does_not_hide_native_library_drift(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "llama-server").write_bytes(b"unchanged launcher")
+            native = root / "libllama-server-impl.so"
+            native.write_bytes(b"native implementation A")
+            identity = payload_identity(root)
+            verify_payload(identity, "llamacpp")
+            native.write_bytes(b"native implementation B")
+            with self.assertRaisesRegex(ValueError, "payload changed"):
+                verify_payload(identity, "llamacpp")
+
+    def test_added_backend_and_missing_payload_provenance_are_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "llama-server").write_bytes(b"launcher")
+            identity = payload_identity(root)
+            (root / "libggml-cuda.so").write_bytes(b"new discovered backend")
+            with self.assertRaisesRegex(ValueError, "payload changed"):
+                verify_payload(identity, "ollama")
+        with self.assertRaisesRegex(ValueError, "provenance missing"):
+            verify_payload(None, "ollama")
 
     def test_duplicate_yaml_key_is_rejected(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -71,8 +104,12 @@ class MonitorAndIntegrityTests(unittest.TestCase):
                 yaml_read(path)
 
     def test_doctor_missing_tools_are_explicit(self):
-        with patch("quant_benchmark_lab.environment.command", return_value={"unavailable": "missing"}):
+        with patch(
+            "quant_benchmark_lab.environment.command", return_value={"unavailable": "missing"}
+        ):
             env = capture_environment("no-such-ollama", "no-such-llama")
         self.assertIn("unavailable", env["ollama"])
         self.assertIsNotNone(env["harness_source_sha256"])
-        self.assertEqual(environment_identity(env), environment_identity(json.loads(json.dumps(env))))
+        self.assertEqual(
+            environment_identity(env), environment_identity(json.loads(json.dumps(env)))
+        )

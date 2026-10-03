@@ -28,27 +28,44 @@ def native_metrics(engine: str, final: dict) -> tuple[TokenUsage, dict[str, Metr
         total = nonnegative_int(final.get("prompt_eval_count"))
         cached = nonnegative_int(final.get("prompt_eval_cached_count"))
         output = nonnegative_int(final.get("eval_count"))
+        generated = output
         evaluated = total - cached if total is not None and cached is not None else None
         prefill = duration(final.get("prompt_eval_duration"), 1e6, "ollama.prompt_eval_duration/ns")
         decode = duration(final.get("eval_duration"), 1e6, "ollama.eval_duration/ns")
         load = duration(final.get("load_duration"), 1e6, "ollama.load_duration/ns")
-        source = "ollama final usage; eval_count includes engine-defined EOS/first-token policy"
+        source = (
+            "ollama v0.35.1 bundled llama stats; decoded=n_gen_steps (first token from prefill)"
+        )
     elif engine == "llamacpp":
         t = final.get("timings", {})
         evaluated = nonnegative_int(t.get("prompt_n"))
         cached = nonnegative_int(t.get("cache_n"))
         total = evaluated + cached if evaluated is not None and cached is not None else None
         output = nonnegative_int(final.get("tokens_predicted", t.get("predicted_n")))
+        generated = nonnegative_int(t.get("predicted_n"))
         prefill = duration(t.get("prompt_ms"), 1, "llamacpp.timings.prompt_ms")
         decode = duration(t.get("predicted_ms"), 1, "llamacpp.timings.predicted_ms")
         load = measured(None, "ms", "llamacpp", "native load timer not exposed by completion")
-        source = "llamacpp timings cache_n + prompt_n; predicted_n is engine-defined"
+        source = (
+            "llamacpp timings cache_n + prompt_n; decoded=n_gen_steps (first token from prefill)"
+        )
     else:
         raise ValueError(f"unknown metrics adapter {engine}")
-    decoded = output if engine == "ollama" else nonnegative_int(final.get("timings", {}).get("predicted_n"))
-    usage = TokenUsage(input_total=total, input_cached=cached, input_evaluated=evaluated,
-                       output=output, decoded=decoded, source=source,
-                       reason="missing native token fields" if total is None or output is None else None)
-    return usage, {"prefill_ms": prefill, "decode_ms": decode,
-                   "prefill_tok_s": rate(evaluated, prefill), "decode_tok_s": rate(decoded, decode),
-                   "request_native_load_ms": load}
+    # Audited b92761a / Ollama's b11232 server_slot_stats::n_gen_tps uses n_gen - 1.
+    decoded = max(0, generated - 1) if generated is not None else None
+    usage = TokenUsage(
+        input_total=total,
+        input_cached=cached,
+        input_evaluated=evaluated,
+        output=output,
+        decoded=decoded,
+        source=source,
+        reason="missing native token fields" if total is None or output is None else None,
+    )
+    return usage, {
+        "prefill_ms": prefill,
+        "decode_ms": decode,
+        "prefill_tok_s": rate(evaluated, prefill),
+        "decode_tok_s": rate(decoded, decode),
+        "request_native_load_ms": load,
+    }

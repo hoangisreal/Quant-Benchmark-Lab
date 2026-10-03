@@ -16,8 +16,14 @@ def verify_model(model: ModelSpec) -> dict:
     if file_hash(path) != model.sha256:
         raise ValueError(f"artifact checksum mismatch: {path}")
     manifest = json.loads(Path(model.provenance_path).read_text())
-    for key, expected in {"sha256": model.sha256, "revision": model.revision,
-                          "source_repo": model.source_repo, "quant": model.quant}.items():
+    for key, expected in {
+        "sha256": model.sha256,
+        "revision": model.revision,
+        "source_repo": model.source_repo,
+        "quant": model.quant,
+        "license": model.license,
+        "size_bytes": path.stat().st_size,
+    }.items():
         if manifest.get(key) != expected:
             raise ValueError(f"provenance mismatch: {key}")
     if manifest.get("template_sha256") != hashlib.sha256(model.template.encode()).hexdigest():
@@ -39,14 +45,27 @@ def verify_toolchain(config: CampaignConfig) -> dict:
         raise ValueError("llama.cpp commit must be a full SHA")
     from .environment import executable_identity
 
-    for engine, binary in (("ollama", config.runtime.ollama_binary),
-                           ("llamacpp", config.runtime.llama_binary)):
+    for engine, binary in (
+        ("ollama", config.runtime.ollama_binary),
+        ("llamacpp", config.runtime.llama_binary),
+    ):
         if not any(c.engine == engine for c in config.cells):
             continue
         actual = executable_identity(binary)
         if actual.get("sha256") != lock.get(engine, {}).get("sha256") or not actual.get("sha256"):
             raise ValueError(f"{engine} binary does not match the toolchain lock")
+        verify_payload(lock[engine].get("payload"), engine)
     return lock
+
+
+def verify_payload(payload: dict | None, engine: str) -> None:
+    from .environment import payload_identity
+
+    if not payload or not payload.get("root") or not payload.get("files"):
+        raise ValueError(f"{engine} native payload provenance missing; repin the toolchain")
+    actual = payload_identity(Path(payload["root"]))
+    if actual != payload:
+        raise ValueError(f"{engine} native payload changed since pinning")
 
 
 def verify_artifacts(config: CampaignConfig) -> dict:

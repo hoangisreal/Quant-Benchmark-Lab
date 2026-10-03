@@ -51,6 +51,11 @@ class OllamaBackend:
             "OLLAMA_FLASH_ATTENTION": "0",
             "OLLAMA_KV_CACHE_TYPE": "f16",
             "OLLAMA_DEBUG": "1",
+            # v0.35.1 forwards these to its bundled llama-server (source-audited).
+            "LLAMA_ARG_CACHE_RAM": "0",
+            "LLAMA_ARG_FIT": "off",
+            "LLAMA_ARG_LOAD_MODE": "mmap",
+            "LLAMA_ARG_LAZY_MODE": "off",
         }
 
     def _wait_daemon(self):
@@ -147,6 +152,8 @@ class OllamaBackend:
                 "raw": True,
                 "stream": False,
                 "keep_alive": -1,
+                "truncate": False,
+                "shift": False,
                 "options": self.options(),
             },
         )

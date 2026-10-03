@@ -24,7 +24,9 @@ def parser():
     doctor = sub.add_parser("doctor", help="capture environment; missing hardware is explicit")
     doctor.add_argument("--output", type=Path)
     doctor.add_argument("--require-gpu", action="store_true")
-    doctor.add_argument("--config", type=Path, help="inspect the configured binaries and full source lock")
+    doctor.add_argument(
+        "--config", type=Path, help="inspect the configured binaries and full source lock"
+    )
     for name in ("validate", "plan", "preflight", "freeze"):
         cmd = sub.add_parser(name)
         cmd.add_argument("--config", type=Path, required=True)
@@ -51,8 +53,9 @@ def dispatch(args):
     if args.command == "doctor":
         if args.config:
             cfg = load_config(args.config)
-            value = capture_environment(cfg.runtime.ollama_binary, cfg.runtime.llama_binary,
-                                        cfg.runtime.toolchain_lock)
+            value = capture_environment(
+                cfg.runtime.ollama_binary, cfg.runtime.llama_binary, cfg.runtime.toolchain_lock
+            )
         else:
             value = capture_environment()
         if args.output:
@@ -62,13 +65,29 @@ def dispatch(args):
     if args.command in {"validate", "plan", "preflight", "freeze"}:
         config = load_config(args.config)
         if args.command == "validate":
-            print(json.dumps({"valid": True, "stage": config.stage, "synthetic": config.synthetic,
-                              "config_hash": digest(config.model_dump()), "note": "structural validation; hardware/artifacts need preflight"}))
+            print(
+                json.dumps(
+                    {
+                        "valid": True,
+                        "stage": config.stage,
+                        "synthetic": config.synthetic,
+                        "config_hash": digest(config.model_dump()),
+                        "note": "structural validation; hardware/artifacts need preflight",
+                    }
+                )
+            )
         elif args.command == "plan":
             schedule = make_schedule(config, args.suite)
             atomic_json(args.output, schedule)
-            print(json.dumps({"schedule": str(args.output), "planned_trials": schedule["planned_trials"],
-                              "synthetic": config.synthetic}))
+            print(
+                json.dumps(
+                    {
+                        "schedule": str(args.output),
+                        "planned_trials": schedule["planned_trials"],
+                        "synthetic": config.synthetic,
+                    }
+                )
+            )
         elif args.command == "preflight":
             result = preflight(config, args.output)
             print(json.dumps({k: result[k] for k in ("passed", "synthetic", "failures")}))
@@ -92,11 +111,20 @@ def dispatch(args):
         schedule = json.loads(args.schedule.read_text())
         config = validate_schedule(schedule)
         if args.dry_run:
-            print(json.dumps({"planned_trials": schedule["planned_trials"], "synthetic": config.synthetic,
-                              "sessions": len(schedule["sessions"])}))
+            print(
+                json.dumps(
+                    {
+                        "planned_trials": schedule["planned_trials"],
+                        "synthetic": config.synthetic,
+                        "sessions": len(schedule["sessions"]),
+                    }
+                )
+            )
             return 0
         root = args.campaign or Path("results/raw") / f"{config.name}-{digest(schedule)[:12]}"
-        evidence = json.loads(Path(config.preflight_path).read_text()) if config.preflight_path else None
+        evidence = (
+            json.loads(Path(config.preflight_path).read_text()) if config.preflight_path else None
+        )
         BenchmarkRunner(schedule, root, args.resume, evidence).run()
         print(f"Campaign saved: {root}")
     elif args.command == "evaluate":
@@ -112,11 +140,25 @@ def dispatch(args):
         records = store.records()
         schedule = json.loads((store.root / "schedule.json").read_text())
         planned = {t["id"] for session in schedule["sessions"] for t in session["trials"]}
-        completed = {r.trial_id for r in records if r.status == "ok" and r.phase in {"measurement", "quality"}}
-        print(json.dumps({"integrity": "verified", "records": len(records),
-                          "trial_completion": "complete" if planned <= completed else "incomplete",
-                          "n_planned": len(planned), "n_unresolved": len(planned - completed),
-                          "note": "file integrity does not substitute for hardware/equivalence preflight"}))
+        completed = {
+            r.trial_id
+            for r in records
+            if r.status == "ok" and r.phase in {"measurement", "quality"}
+        }
+        unresolved = planned - completed
+        print(
+            json.dumps(
+                {
+                    "integrity": "verified",
+                    "records": len(records),
+                    "trial_completion": "incomplete" if unresolved else "complete",
+                    "n_planned": len(planned),
+                    "n_unresolved": len(unresolved),
+                    "note": "file integrity does not substitute for hardware/equivalence preflight",
+                }
+            )
+        )
+        return 2 if unresolved else 0
     return 0
 
 
@@ -124,7 +166,9 @@ def main(argv=None):
     try:
         return dispatch(parser().parse_args(argv))
     except KeyboardInterrupt:
-        print("Interrupted; raw attempts preserved. Resume the same frozen schedule.", file=sys.stderr)
+        print(
+            "Interrupted; raw attempts preserved. Resume the same frozen schedule.", file=sys.stderr
+        )
         return 130
     except (OSError, ValueError, RuntimeError, KeyError) as exc:
         print(f"qbl: {exc}", file=sys.stderr)

@@ -1,0 +1,21 @@
+name: engine-cpu
+experiment: engine
+synthetic: false
+deployment: cpu
+stage: pilot
+runtime: ../runtime.yaml
+protocol: ../protocol.yaml
+generation: ../generation.yaml
+catalog: ../models.yaml
+performance_path: ../../data/performance/prompts.jsonl
+quality_path: ../../data/quality/items.jsonl
+answers_path: ../../data/quality/answers.jsonl
+cells:
+- id: ollama
+  engine: ollama
+  model_id: qwen-0_5b
+  quant: Q4_K_M
+- id: llamacpp
+  engine: llamacpp
+  model_id: qwen-0_5b
+  quant: Q4_K_M

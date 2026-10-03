@@ -8,18 +8,21 @@ jobs:
       - uses: astral-sh/setup-uv@v6
         with:
           python-version: '3.11'
-      - name: Resolve dependencies until the initial lock can be committed
+      - name: Check committed dependency lock
         run: |
-          if [ ! -f uv.lock ]; then uv lock; fi
-          uv sync --frozen --group dev
+          test -f uv.lock
+          uv lock --check
+          uv sync --frozen --python 3.11 --group dev
       - name: Lint and test
         run: |
-          uv run ruff check .
-          uv run python -m unittest discover -s tests -v
+          uv run --frozen ruff check .
+          uv run --frozen python -m unittest discover -s tests -v
       - name: CLI campaign demonstration
         run: |
-          uv run qbl plan --config configs/demo.yaml --output /tmp/schedule.json
-          uv run qbl run --schedule /tmp/schedule.json --campaign /tmp/campaign
-          uv run qbl evaluate --campaign /tmp/campaign
-          uv run qbl report --campaign /tmp/campaign --output /tmp/report
-          uv run qbl audit --campaign /tmp/campaign
+          uv run --frozen qbl plan --config configs/demo.yaml --output /tmp/schedule.json
+          uv run --frozen qbl run --schedule /tmp/schedule.json --campaign /tmp/campaign
+          uv run --frozen qbl evaluate --campaign /tmp/campaign
+          uv run --frozen qbl report --campaign /tmp/campaign --output /tmp/report
+          uv run --frozen qbl audit --campaign /tmp/campaign
+          uv run --frozen qbl run --schedule /tmp/schedule.json --campaign /tmp/campaign --resume
+          uv run --frozen qbl audit --campaign /tmp/campaign

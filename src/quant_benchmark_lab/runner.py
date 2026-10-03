@@ -394,7 +394,7 @@ class BenchmarkRunner:
             ]
         lock = json.loads(Path(self.config.runtime.toolchain_lock).read_text())
         audit = lock.get("settings_audit", {}).get(cell.engine, {})
-        # Audit is a human-reviewed source artifact, not an inference measurement.
+        # Audit is a documented source review artifact, not an inference measurement.
         required = (
             "samplers",
             "kv_f16",

@@ -28,11 +28,21 @@ class Generation(StrictModel):
 
     @model_validator(mode="after")
     def baseline(self):
-        expected = {"temperature": 0, "top_k": 1, "top_p": 1, "min_p": 0,
-                    "repeat_penalty": 1, "repeat_last_n": 0, "presence_penalty": 0,
-                    "frequency_penalty": 0, "mirostat": 0}
+        expected = {
+            "temperature": 0,
+            "top_k": 1,
+            "top_p": 1,
+            "min_p": 0,
+            "repeat_penalty": 1,
+            "repeat_last_n": 0,
+            "presence_penalty": 0,
+            "frequency_penalty": 0,
+            "mirostat": 0,
+        }
         if any(getattr(self, k) != v for k, v in expected.items()):
-            raise ValueError("MVP supports the explicit greedy baseline only; new profiles need a new protocol")
+            raise ValueError(
+                "MVP supports the explicit greedy baseline only; new profiles need a new protocol"
+            )
         if self.seed < 0:
             raise ValueError("seed must be explicit and nonnegative")
         return self
@@ -134,8 +144,18 @@ class CampaignConfig(StrictModel):
             raise ValueError("synthetic data requires synthetic stage and vice versa")
         if len({c.id for c in self.cells}) != len(self.cells):
             raise ValueError("duplicate cell ID")
-        if self.stage == "official" and (self.protocol.state != "frozen" or self.deployment != "gpu"):
+        if self.stage == "official" and (
+            self.protocol.state != "frozen" or self.deployment != "gpu"
+        ):
             raise ValueError("official campaign requires frozen protocol and GPU deployment")
+        if (
+            not self.synthetic
+            and any(c.engine == "ollama" for c in self.cells)
+            and self.runtime.batch_size != self.runtime.microbatch_size
+        ):
+            raise ValueError(
+                "Ollama uses num_batch for both batch and microbatch; sizes must match"
+            )
         m = [c.model for c in self.cells]
         if self.experiment == "engine":
             if {c.engine for c in self.cells} != {"ollama", "llamacpp"} or len(self.cells) != 2:
@@ -143,8 +163,14 @@ class CampaignConfig(StrictModel):
             if m[0].model_dump() != m[1].model_dump():
                 raise ValueError("engine experiment must use identical artifact and model settings")
         if self.experiment == "quantization":
-            fixed = [{k: v for k, v in x.model_dump().items()
-                      if k not in {"quant", "path", "sha256", "provenance_path"}} for x in m]
+            fixed = [
+                {
+                    k: v
+                    for k, v in x.model_dump().items()
+                    if k not in {"quant", "path", "sha256", "provenance_path"}
+                }
+                for x in m
+            ]
             if len({digest(x) for x in fixed}) != 1 or len({c.engine for c in self.cells}) != 1:
                 raise ValueError("quantization experiment can vary only quant/artifact")
             if len({x.quant for x in m}) != len(m):
@@ -154,8 +180,9 @@ class CampaignConfig(StrictModel):
                 raise ValueError("MVP model experiment uses llama.cpp Q4_K_M only")
             if len({x.id for x in m}) != len(m):
                 raise ValueError("duplicate model")
-        if self.runtime.context_size <= max(self.generation.performance_max_tokens,
-                                            self.generation.quality_max_tokens):
+        if self.runtime.context_size <= max(
+            self.generation.performance_max_tokens, self.generation.quality_max_tokens
+        ):
             raise ValueError("context leaves no input budget")
         return self
 
@@ -189,15 +216,22 @@ def load_config(path: Path) -> CampaignConfig:
     raw = yaml_read(path)
     catalog_file = raw.pop("catalog", None)
     for section in ("runtime", "protocol", "generation"):
+        section_parent = path.parent
         if isinstance(raw.get(section), str):
             source = (path.parent / raw[section]).resolve()
             raw[section] = yaml_read(source)
-            if section == "runtime":
-                for key in ("llama_binary", "toolchain_lock"):
-                    if key in raw[section]:
-                        raw[section][key] = resolve_path(raw[section][key], source.parent)
-        if section == "runtime" and raw[section].get("threads") == "physical":
-            raw[section]["threads"] = psutil.cpu_count(logical=False) or 1
+            section_parent = source.parent
+        if section == "runtime":
+            for key in ("llama_binary", "ollama_binary"):
+                binary = raw[section].get(key)
+                if binary and "/" in binary:
+                    raw[section][key] = resolve_path(binary, section_parent)
+            if "toolchain_lock" in raw[section]:
+                raw[section]["toolchain_lock"] = resolve_path(
+                    raw[section]["toolchain_lock"], section_parent
+                )
+            if raw[section].get("threads") == "physical":
+                raw[section]["threads"] = psutil.cpu_count(logical=False) or 1
     if catalog_file:
         source = (path.parent / catalog_file).resolve()
         catalog = yaml_read(source)

@@ -33,6 +33,18 @@ class ConfigurationTests(unittest.TestCase):
         with self.assertRaises(ValidationError):
             CampaignConfig.model_validate(raw)
 
+    def test_real_ollama_rejects_ineffective_microbatch_setting(self):
+        raw = self.config.model_dump()
+        raw.update(synthetic=False, stage="pilot")
+        raw["runtime"].update(batch_size=128, microbatch_size=64)
+        with self.assertRaisesRegex(ValidationError, "sizes must match"):
+            CampaignConfig.model_validate(raw)
+        raw["experiment"] = "quantization"
+        raw["cells"][0]["engine"] = "llamacpp"
+        raw["cells"][0]["model"]["quant"] = "Q8_0"
+        # Standalone llama-server supports a separate physical microbatch.
+        self.assertEqual(CampaignConfig.model_validate(raw).runtime.microbatch_size, 64)
+
     def test_engine_gguf_mismatch_rejected(self):
         raw = self.config.model_dump()
         raw["cells"][1]["model"]["quant"] = "Q8_0"
@@ -88,28 +100,70 @@ class MetricTests(unittest.TestCase):
                 Metric(value=x, unit="ms", source="test")
 
     def test_ollama_uncached_denominator_and_ns(self):
-        usage, metrics = native_metrics("ollama", {"prompt_eval_count": 100,
-            "prompt_eval_cached_count": 90, "prompt_eval_duration": 100_000_000,
-            "eval_count": 5, "eval_duration": 500_000_000})
+        usage, metrics = native_metrics(
+            "ollama",
+            {
+                "prompt_eval_count": 100,
+                "prompt_eval_cached_count": 90,
+                "prompt_eval_duration": 100_000_000,
+                "eval_count": 5,
+                "eval_duration": 500_000_000,
+            },
+        )
         self.assertEqual(usage.input_evaluated, 10)
         self.assertEqual(metrics["prefill_tok_s"].value, 100)
-        self.assertEqual(metrics["decode_tok_s"].value, 10)
+        self.assertEqual(usage.output, 5)
+        self.assertEqual(usage.decoded, 4)
+        self.assertEqual(metrics["decode_tok_s"].value, 8)
 
     def test_missing_cache_count_not_guessed_zero(self):
-        usage, metrics = native_metrics("ollama", {"prompt_eval_count": 100,
-                                                   "prompt_eval_duration": 1_000_000})
+        usage, metrics = native_metrics(
+            "ollama", {"prompt_eval_count": 100, "prompt_eval_duration": 1_000_000}
+        )
         self.assertIsNone(usage.input_evaluated)
         self.assertIsNone(metrics["prefill_tok_s"].value)
 
     def test_llama_native_counts_and_ms(self):
-        usage, metrics = native_metrics("llamacpp", {"timings": {"prompt_n": 10, "cache_n": 90,
-            "prompt_ms": 100.0, "predicted_n": 5, "predicted_ms": 500.0}})
+        usage, metrics = native_metrics(
+            "llamacpp",
+            {
+                "timings": {
+                    "prompt_n": 10,
+                    "cache_n": 90,
+                    "prompt_ms": 100.0,
+                    "predicted_n": 5,
+                    "predicted_ms": 500.0,
+                }
+            },
+        )
         self.assertEqual(usage.input_total, 100)
         self.assertEqual(metrics["prefill_tok_s"].value, 100)
+        self.assertEqual(usage.output, 5)
+        self.assertEqual(usage.decoded, 4)
+        self.assertEqual(metrics["decode_tok_s"].value, 8)
+
+    def test_decode_steps_match_audited_native_boundary_for_short_outputs(self):
+        # server_slot_stats::n_gen_steps excludes the first prefill-sampled token.
+        for count in (0, 1, 8):
+            finals = {
+                "ollama": {"eval_count": count, "eval_duration": 100_000_000},
+                "llamacpp": {
+                    "tokens_predicted": count,
+                    "timings": {"predicted_n": count, "predicted_ms": 100.0},
+                },
+            }
+            for engine, final in finals.items():
+                with self.subTest(engine=engine, count=count):
+                    usage, metrics = native_metrics(engine, final)
+                    self.assertEqual(usage.output, count)
+                    self.assertEqual(usage.decoded, max(0, count - 1))
+                    self.assertEqual(metrics["decode_tok_s"].value, max(0, count - 1) * 10)
 
     def test_zero_duration_is_null_rate(self):
-        _, metrics = native_metrics("ollama", {"prompt_eval_count": 10,
-            "prompt_eval_cached_count": 0, "prompt_eval_duration": 0})
+        _, metrics = native_metrics(
+            "ollama",
+            {"prompt_eval_count": 10, "prompt_eval_cached_count": 0, "prompt_eval_duration": 0},
+        )
         self.assertIsNone(metrics["prefill_tok_s"].value)
 
     def test_inconsistent_token_accounting_rejected(self):
@@ -139,9 +193,28 @@ class QualityTests(unittest.TestCase):
         a = {"scorer": "json", "expected": {"age": 1}}
         self.assertEqual(score('{"age":1}', a)["score"], 1)
         self.assertEqual(score('{"age":1.0}', a)["score"], 1)
-        for text in ('{"age":true}', '{"age":1,"x":2}', '{"age":2,"age":1}', '{"age":NaN}', '{"age":1e999}'):
+        for text in (
+            '{"age":true}',
+            '{"age":1,"x":2}',
+            '{"age":2,"age":1}',
+            '{"age":NaN}',
+            '{"age":1e999}',
+        ):
             self.assertEqual(score(text, a)["score"], 0)
             json.dumps(score(text, a), allow_nan=False)
+
+    def test_json_numbers_compare_original_decimal_literals(self):
+        cases = [
+            ('{"n":1e-999}', {"n": 0}, 0),
+            ('{"n":9007199254740993.0}', {"n": 9007199254740992}, 0),
+            ('{"n":9007199254740993.0}', {"n": 9007199254740993}, 1),
+            ('{"n":1.0000000000000000001}', {"n": 1}, 0),
+        ]
+        for text, expected, result in cases:
+            with self.subTest(output=text, expected=expected):
+                scored = score(text, {"scorer": "json", "expected": expected})
+                self.assertEqual(scored["score"], result)
+                json.dumps(scored, allow_nan=False)
 
     def test_dataset_has_60_items_and_balanced_categories(self):
         rows = read_items(ROOT / "data/quality/items.jsonl")
@@ -159,8 +232,17 @@ class GateAndStatisticsTests(unittest.TestCase):
 
     def test_equivalence_requires_cache_and_prompt_token_parity(self):
         config = load_config(ROOT / "configs/demo.yaml")
-        rows = [{"cell_id": c.id, "prompt_id": "p", "status": "ok", "cache": 0,
-                 "input": 10, "prompt_hash": "same"} for c in config.cells]
+        rows = [
+            {
+                "cell_id": c.id,
+                "prompt_id": "p",
+                "status": "ok",
+                "cache": 0,
+                "input": 10,
+                "prompt_hash": "same",
+            }
+            for c in config.cells
+        ]
         self.assertTrue(equivalence(rows, config)["passed"])
         rows[0]["cache"] = 3
         self.assertFalse(equivalence(rows, config)["passed"])
@@ -169,15 +251,29 @@ class GateAndStatisticsTests(unittest.TestCase):
 
     def test_equivalence_missing_engine_fails(self):
         config = load_config(ROOT / "configs/demo.yaml")
-        self.assertFalse(equivalence([{"cell_id": "ollama", "prompt_id": "p", "status": "ok",
-                                      "cache": 0, "input": 10}], config)["passed"])
+        self.assertFalse(
+            equivalence(
+                [{"cell_id": "ollama", "prompt_id": "p", "status": "ok", "cache": 0, "input": 10}],
+                config,
+            )["passed"]
+        )
 
     def test_cold_and_warm_cache_counts_are_separate_strata(self):
         config = load_config(ROOT / "configs/demo.yaml")
         config.protocol.allowed_bos_cache_tokens = 1
-        rows = [{"cell_id": c.id, "prompt_id": "p", "run_mode": mode, "status": "ok",
-                 "cache": cached, "input": 10, "prompt_hash": "same"}
-                for c in config.cells for mode, cached in (("cold", 0), ("warm", 1))]
+        rows = [
+            {
+                "cell_id": c.id,
+                "prompt_id": "p",
+                "run_mode": mode,
+                "status": "ok",
+                "cache": cached,
+                "input": 10,
+                "prompt_hash": "same",
+            }
+            for c in config.cells
+            for mode, cached in (("cold", 0), ("warm", 1))
+        ]
         self.assertTrue(equivalence(rows, config)["passed"])
 
     def test_duplicate_load_observations_rejected(self):

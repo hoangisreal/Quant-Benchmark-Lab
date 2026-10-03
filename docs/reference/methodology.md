@@ -1,11 +1,14 @@
 # Benchmark methodology, protocol v1
 
+[Documentation home](../../README.md) · [Run the protocol](../guides/reproduction.md)
+
 ## Controlled experiments
 
 E1 varies F16/Q8_0/Q4_K_M on Qwen2.5-0.5B and llama.cpp. E2 varies Ollama versus llama.cpp
 with the exact same local Q4_K_M GGUF and rendered prompt. E3 varies models under llama.cpp
 Q4_K_M. The matrices are in `configs/experiments/`. Source revisions and artifact checksums
-start unresolved and must be supplied by the preparation pipeline, not guessed from model tags.
+must be verified by the local preparation pipeline, not guessed from model tags. A resolved
+catalog or source audit is not a passing hardware certificate.
 
 Real baseline runs require full GPU layer offload. An OOM, unknown offload state, automatic
 context adjustment or CPU layer fallback invalidates the comparison. E3 also needs a model
@@ -28,7 +31,7 @@ BOS/input-count mismatch. Answer keys are never included in model requests.
 
 Some effective sampler/runtime behavior needs a reviewed source audit for the pinned binary.
 `configs/settings_audit.example.json` is deliberately unapproved. A successful HTTP response
-does not prove an unknown setting was applied. The audit is documented human source review;
+does not prove an unknown setting was applied. The audit is documented source review;
 it is supplemented by token/cache/offload and native-metric probes, not presented as telemetry.
 
 ## Timing boundaries
@@ -49,6 +52,13 @@ are excluded. TTFT is a first-content proxy because transport can buffer multipl
 Native token counters, not HTTP chunks, supply token counts. Ollama nanoseconds are converted
 to milliseconds; llama.cpp native milliseconds retain their own source labels. No rate is inferred
 from TTFT or inter-chunk gaps. Missing or zero-duration rates are null, never fabricated.
+
+For the [audited candidate pair](engine-compatibility.md), `predicted_n` and Ollama's
+forwarded `eval_count` include the first token sampled from the final prefill logits.
+Their native generation rate uses `max(0, generated - 1)` decoding steps. The adapter
+preserves the full output count and uses that separate denominator for decode tok/s;
+a single generated token has zero subsequent decoding steps. This mapping must be
+reviewed again for any engine revision with different native timer/counter semantics.
 
 ## Cold, warm and cache
 
@@ -79,7 +89,8 @@ include warmup/eviction; request peaks exclude them. Raw traces retain phase, de
 per-process memory when supported, temperature, utilization, clocks and power when available.
 Missing sensors are explicit. Sampled peaks can miss transients between samples.
 
-Preflight alternates five monitor-on/off pairs and checks median overhead against 3%. A failure
+Preflight alternates five monitor-on/off pairs for each cell and checks median overhead
+against 3% in every cell. A failure
 requires a common interval recalibration and a new pilot. HTTP generation uses a reusable async HTTP client behind the sequential backend interface.
 Absolute TTFT/request deadlines apply to headers, raw byte reads, heartbeats and partial frames;
 timeout cancellation closes the response. The transport change requires a new hardware pilot.
@@ -117,7 +128,7 @@ The local binary/source lock and audited API behavior govern the actual experime
 at a floating branch is a reference, not a substitute for verification of the pinned build.
 
 
-## Engine environment and storage integrity (audit fixes)
+## Engine environment and storage integrity
 
 Engine subprocesses receive a controlled environment: PATH, HOME, TMPDIR, LD_LIBRARY_PATH,
 CUDA_VISIBLE_DEVICES, CUDA_MODULE_LOADING, OMP_NUM_THREADS and OMP_PROC_BIND when present;

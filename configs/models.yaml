@@ -1,9 +1,13 @@
 qwen-0_5b:
   id: qwen-0_5b
   source_repo: Qwen/Qwen2.5-0.5B-Instruct
-  revision: null
-  license: null
-  template: '<|im_start|>user
+  revision: 7ae557604adf67be50417f59c2c2f167def9a775
+  license: apache-2.0
+  template: '<|im_start|>system
+
+    You are Qwen, created by Alibaba Cloud. You are a helpful assistant.<|im_end|>
+
+    <|im_start|>user
 
     {prompt}<|im_end|>
 
@@ -17,22 +21,26 @@ qwen-0_5b:
   artifacts:
     F16:
       path: ../models/gguf/qwen-0_5b/F16.gguf
-      sha256: null
+      sha256: 3fdb7707ec0bfeb3cda74e8a6adee08eb4f4fa7d4b0f482cf0926545c356eb67
       provenance_path: ../models/gguf/qwen-0_5b/F16.json
     Q8_0:
       path: ../models/gguf/qwen-0_5b/Q8_0.gguf
-      sha256: null
+      sha256: f454a16963a93bcac8891f84b2b113fcb4ae10343858679147152969b2d90ae7
       provenance_path: ../models/gguf/qwen-0_5b/Q8_0.json
     Q4_K_M:
       path: ../models/gguf/qwen-0_5b/Q4_K_M.gguf
-      sha256: null
+      sha256: 24f68e61cc4fa55b39a7e536341135873efc9e8fbb06c38d37442e62e647b6f5
       provenance_path: ../models/gguf/qwen-0_5b/Q4_K_M.json
 qwen-1_5b:
   id: qwen-1_5b
   source_repo: Qwen/Qwen2.5-1.5B-Instruct
-  revision: null
-  license: null
-  template: '<|im_start|>user
+  revision: 989aa7980e4cf806f80c7fef2b1adb7bc71aa306
+  license: apache-2.0
+  template: '<|im_start|>system
+
+    You are Qwen, created by Alibaba Cloud. You are a helpful assistant.<|im_end|>
+
+    <|im_start|>user
 
     {prompt}<|im_end|>
 
@@ -46,7 +54,7 @@ qwen-1_5b:
   artifacts:
     F16:
       path: ../models/gguf/qwen-1_5b/F16.gguf
-      sha256: null
+      sha256: 242723559742d22a49d372dcef115cc11f780c5dc66f70df6bf2e130f2f8901b
       provenance_path: ../models/gguf/qwen-1_5b/F16.json
     Q8_0:
       path: ../models/gguf/qwen-1_5b/Q8_0.gguf
@@ -54,14 +62,18 @@ qwen-1_5b:
       provenance_path: ../models/gguf/qwen-1_5b/Q8_0.json
     Q4_K_M:
       path: ../models/gguf/qwen-1_5b/Q4_K_M.gguf
-      sha256: null
+      sha256: 4517172b21025cb4c803b106cb8b892ac40eed76eb803d5168eec3cf5e30d4d0
       provenance_path: ../models/gguf/qwen-1_5b/Q4_K_M.json
 qwen-3b:
   id: qwen-3b
   source_repo: Qwen/Qwen2.5-3B-Instruct
-  revision: null
-  license: null
-  template: '<|im_start|>user
+  revision: aa8e72537993ba99e69dfaafa59ed015b17504d1
+  license: other
+  template: '<|im_start|>system
+
+    You are Qwen, created by Alibaba Cloud. You are a helpful assistant.<|im_end|>
+
+    <|im_start|>user
 
     {prompt}<|im_end|>
 
@@ -75,7 +87,7 @@ qwen-3b:
   artifacts:
     F16:
       path: ../models/gguf/qwen-3b/F16.gguf
-      sha256: null
+      sha256: 7a6f5feca3fc4f67623c2dd9d34f5a7866a1db9b08499e3ba230d27b89ee8106
       provenance_path: ../models/gguf/qwen-3b/F16.json
     Q8_0:
       path: ../models/gguf/qwen-3b/Q8_0.gguf
@@ -83,12 +95,12 @@ qwen-3b:
       provenance_path: ../models/gguf/qwen-3b/Q8_0.json
     Q4_K_M:
       path: ../models/gguf/qwen-3b/Q4_K_M.gguf
-      sha256: null
+      sha256: b72988f46ea37b29a5e8e8096db2a222fd3b3f1362077de9ab62fa5b96376cb8
       provenance_path: ../models/gguf/qwen-3b/Q4_K_M.json
 qwen-4b:
   id: qwen-4b
   source_repo: Qwen/Qwen3-4B
-  revision: null
+  revision: 1cfa9a7208912126459214e8b04321603b3df60c
   license: null
   template: '<|im_start|>user
 

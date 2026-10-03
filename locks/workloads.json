@@ -1,7 +1,7 @@
 {
   "version": 1,
   "provenance": "Project-authored synthetic task suite; not a general intelligence evaluation.",
-  "reference_tokenizer": "Qwen2.5-1.5B-Instruct, exact revision assigned at preparation",
+  "reference_tokenizer": "The pinned GGUF tokenizer for each model; native token IDs captured during preflight.",
   "files": {
     "data/performance/prompts.jsonl": "afc06378252719d0eb4ab8735253d155cd9173067542995bfd4e199449baac6b",
     "data/quality/items.jsonl": "0b7e91503f7f74529ff0625ef78b718e1c6b0eda2ff7e448d7ae365998478deb",

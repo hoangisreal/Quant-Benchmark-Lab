@@ -1,5 +1,0 @@
-{
-  "state": "unresolved",
-  "models": {},
-  "reason": "Model source revisions/artifacts must be pinned by prepare_models.py; no weights bundled."
-}

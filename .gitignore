@@ -17,3 +17,15 @@ reports/*/
 *.tmp
 *.lockfile
 .env
+
+# Local AI-agent instructions, plans and working notes; keep public guides tracked.
+AGENTS.md
+/docs/IMPLEMENTATION_PLAN.md
+/docs/IMPLEMENTATION_STATUS.md
+/docs/AUDIT_*.md
+/docs/agent/
+
+# Machine-specific provenance and frozen absolute paths; examples stay tracked.
+/locks/toolchain.json
+/locks/models.json
+/configs/frozen/

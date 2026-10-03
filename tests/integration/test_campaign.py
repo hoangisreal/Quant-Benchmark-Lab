@@ -51,6 +51,8 @@ class FakeCampaignTests(unittest.TestCase):
         output = Path(self.temp.name) / "reports"
         report(self.root, output)
         self.assertIn("SYNTHETIC DATA", (output / "report.md").read_text())
+        report_identity = json.loads((output / "manifest.json").read_text())["quality_identity"]
+        self.assertEqual(report_identity, quality_result["identity"])
         self.assertTrue(list(output.glob("*.svg")))
 
     def test_resume_skips_successful_trials(self):
@@ -67,7 +69,9 @@ class FakeCampaignTests(unittest.TestCase):
         report(self.root, output)
         first = file_hash(output / "metrics.csv"), file_hash(output / "report.md")
         report(self.root, output)
-        self.assertEqual(first, (file_hash(output / "metrics.csv"), file_hash(output / "report.md")))
+        self.assertEqual(
+            first, (file_hash(output / "metrics.csv"), file_hash(output / "report.md"))
+        )
 
     def test_raw_output_tamper_rejected(self):
         store = self.run_campaign()
@@ -106,6 +110,7 @@ class FakeCampaignTests(unittest.TestCase):
 
         def factory(cell, cfg, work, clock):
             return NoFinal(cell, clock)
+
         with self.assertRaises(ValueError):  # warmup must halt the session/campaign.
             self.run_campaign(backend_factory=factory)
         records = ResultStore(self.root).records()

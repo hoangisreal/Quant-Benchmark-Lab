@@ -31,19 +31,27 @@ def reference_counts(config: CampaignConfig, work: Path) -> dict:
             for item in items:
                 prompt = render(model, item["text"])
                 for text in (prompt, eviction_text(prompt)):
-                    response = backend.client.post("/tokenize", json={"content": text,
-                        "add_special": True, "parse_special": True})
+                    response = backend.client.post(
+                        "/tokenize",
+                        json={"content": text, "add_special": True, "parse_special": True},
+                    )
                     response.raise_for_status()
                     ids = response.json()["tokens"]
                     key = text_hash(text)
                     counts[model.sha256][key] = len(ids)
                     token_evidence[model.sha256][key] = ids
                 p, e = (counts[model.sha256][text_hash(t)] for t in (prompt, eviction_text(prompt)))
-                budget = max(config.generation.performance_max_tokens, config.generation.quality_max_tokens)
+                budget = max(
+                    config.generation.performance_max_tokens, config.generation.quality_max_tokens
+                )
                 if p + budget > config.runtime.context_size or e + 1 > config.runtime.context_size:
-                    raise ValueError(f"{model.id}/{item['id']}: request or eviction exceeds configured context")
+                    raise ValueError(
+                        f"{model.id}/{item['id']}: request or eviction exceeds configured context"
+                    )
                 if e < p:
-                    raise ValueError("eviction prompt is shorter in native tokens than measured prompt")
+                    raise ValueError(
+                        "eviction prompt is shorter in native tokens than measured prompt"
+                    )
         finally:
             backend.close()
     atomic_json(work / "token_ids.json", token_evidence)
@@ -51,15 +59,32 @@ def reference_counts(config: CampaignConfig, work: Path) -> dict:
 
 
 def monitor_overhead(config, counts, work):
-    cell = config.cells[0]
+    cells = {
+        cell.id: _monitor_overhead_cell(config, counts, work / cell.id, cell)
+        for cell in config.cells
+    }
+    return {
+        "passed": all(result["passed"] for result in cells.values()),
+        "overhead_fraction": max(result["overhead_fraction"] for result in cells.values()),
+        "threshold": 0.03,
+        "cells": cells,
+    }
+
+
+def _monitor_overhead_cell(config, counts, work, cell):
     clock = Clock()
     backend = make_backend(cell, config, work, clock)
     item = read_items(Path(config.performance_path))[0]
-    request = Request(render(cell.model, item["text"]), config.generation.performance_max_tokens,
-                      config.generation, cell.model.stop)
+    request = Request(
+        render(cell.model, item["text"]),
+        config.generation.performance_max_tokens,
+        config.generation,
+        cell.model.stop,
+    )
     observations = []
-    env = capture_environment(config.runtime.ollama_binary, config.runtime.llama_binary,
-                              config.runtime.toolchain_lock)
+    env = capture_environment(
+        config.runtime.ollama_binary, config.runtime.llama_binary, config.runtime.toolchain_lock
+    )
     device = next(d for d in env["gpu"]["devices"] if d["index"] == config.runtime.gpu_index)
     lock = GPULock(device["uuid"])
     warmups = []
@@ -69,9 +94,13 @@ def monitor_overhead(config, counts, work):
         for _ in range(config.protocol.warmups):
             warmups.append([e.model_dump() for e in backend.stream(request)])
         for pair in range(5):
-            for enabled in ([False, True] if pair % 2 == 0 else [True, False]):
-                monitor = GPUMonitor(clock, config.protocol.sample_interval_ms,
-                                     config.runtime.gpu_index, enabled=enabled)
+            for enabled in [False, True] if pair % 2 == 0 else [True, False]:
+                monitor = GPUMonitor(
+                    clock,
+                    config.protocol.sample_interval_ms,
+                    config.runtime.gpu_index,
+                    enabled=enabled,
+                )
                 try:
                     monitor.start()
                     list(backend.stream(backend.prepare_cache(request)))
@@ -84,14 +113,24 @@ def monitor_overhead(config, counts, work):
                     if len(finals) != 1:
                         raise ValueError("overhead probe has no valid terminal response")
                     usage, _ = native_metrics(cell.engine, finals[0].payload)
-                    if usage.input_cached is None or usage.input_cached > config.protocol.allowed_bos_cache_tokens:
+                    if (
+                        usage.input_cached is None
+                        or usage.input_cached > config.protocol.allowed_bos_cache_tokens
+                    ):
                         raise ValueError("overhead probe is not cache-equivalent")
                     if usage.input_total != counts[cell.model.sha256][text_hash(request.prompt)]:
                         raise ValueError("overhead probe input token mismatch")
-                    observations.append({"pair": pair, "monitor_enabled": enabled,
-                        "e2e_ms": (end - start) / 1e6, "output_tokens": usage.output,
-                        "cached_tokens": usage.input_cached,
-                        "events": [e.model_dump() for e in events], "gpu_samples": monitor.samples})
+                    observations.append(
+                        {
+                            "pair": pair,
+                            "monitor_enabled": enabled,
+                            "e2e_ms": (end - start) / 1e6,
+                            "output_tokens": usage.output,
+                            "cached_tokens": usage.input_cached,
+                            "events": [e.model_dump() for e in events],
+                            "gpu_samples": monitor.samples,
+                        }
+                    )
                 finally:
                     monitor.close()
     finally:
@@ -104,18 +143,31 @@ def monitor_overhead(config, counts, work):
     on = statistics.median(r["e2e_ms"] for r in observations if r["monitor_enabled"])
     off = statistics.median(r["e2e_ms"] for r in observations if not r["monitor_enabled"])
     ratio = on / off - 1
-    return {"passed": ratio <= 0.03, "overhead_fraction": ratio,
-            "observations": observations, "threshold": 0.03,
-            "load_observation": load.model_dump(), "warmup_events": warmups}
+    return {
+        "passed": ratio <= 0.03,
+        "overhead_fraction": ratio,
+        "observations": observations,
+        "threshold": 0.03,
+        "load_observation": load.model_dump(),
+        "warmup_events": warmups,
+    }
 
 
 def preflight(config: CampaignConfig, output: Path) -> dict:
     output.mkdir(parents=True, exist_ok=False)
-    env = capture_environment(config.runtime.ollama_binary, config.runtime.llama_binary,
-                              config.runtime.toolchain_lock)
-    result = {"schema_version": 1, "passed": False, "synthetic": config.synthetic,
-              "measurement_hash": measurement_identity(config), "dataset_hashes": dataset_identity(config),
-              "environment_hash": environment_identity(env), "failures": [], "input_counts": {}}
+    env = capture_environment(
+        config.runtime.ollama_binary, config.runtime.llama_binary, config.runtime.toolchain_lock
+    )
+    result = {
+        "schema_version": 1,
+        "passed": False,
+        "synthetic": config.synthetic,
+        "measurement_hash": measurement_identity(config),
+        "dataset_hashes": dataset_identity(config),
+        "environment_hash": environment_identity(env),
+        "failures": [],
+        "input_counts": {},
+    }
     try:
         if config.synthetic:
             raise ValueError("synthetic campaigns cannot produce hardware preflight certificates")
@@ -123,8 +175,14 @@ def preflight(config: CampaignConfig, output: Path) -> dict:
             raise ValueError("hardware preflight requires GPU deployment")
         if not env["gpu"]["available"]:
             raise ValueError(f"GPU unavailable: {env['gpu']['reason']}")
-        device = next((d for d in env["gpu"]["devices"] if d["index"] == config.runtime.gpu_index), None)
-        if not device or "3050" not in device["name"] or not 3.5 * 1024**3 <= device["total_bytes"] <= 4.5 * 1024**3:
+        device = next(
+            (d for d in env["gpu"]["devices"] if d["index"] == config.runtime.gpu_index), None
+        )
+        if (
+            not device
+            or "3050" not in device["name"]
+            or not 3.5 * 1024**3 <= device["total_bytes"] <= 4.5 * 1024**3
+        ):
             raise ValueError("hardware preflight requires RTX 3050 4GB")
         verify_artifacts(config)
         monitor = GPUMonitor(Clock(), config.protocol.sample_interval_ms, config.runtime.gpu_index)
@@ -135,10 +193,17 @@ def preflight(config: CampaignConfig, output: Path) -> dict:
             monitor.close()
         counts = reference_counts(config, output / "reference")
         result["input_counts"] = counts
-        pilot_protocol = config.protocol.model_copy(update={"state": "draft", "cold_repetitions": 2,
-                                                             "warm_repetitions": 4, "warm_sessions": 2})
-        pilot = config.model_copy(update={"stage": "pilot", "preflight_path": None,
-                                          "protocol": pilot_protocol})
+        pilot_protocol = config.protocol.model_copy(
+            update={
+                "state": "draft",
+                "cold_repetitions": 2,
+                "warm_repetitions": 4,
+                "warm_sessions": 2,
+            }
+        )
+        pilot = config.model_copy(
+            update={"stage": "pilot", "preflight_path": None, "protocol": pilot_protocol}
+        )
         schedule = make_schedule(pilot, "both")
         atomic_json(output / "probe_schedule.json", schedule)
         campaign = output / "pilot-campaign"
@@ -146,26 +211,39 @@ def preflight(config: CampaignConfig, output: Path) -> dict:
         store = ResultStore(campaign)
         store.verify()
         records = [r for r in store.records() if r.phase in {"measurement", "quality"}]
-        observations = [{"cell_id": r.cell_id, "prompt_id": r.prompt_id, "status": r.status,
-                         "run_mode": r.run_mode,
-                         "prompt_hash": r.prompt_hash, "input": r.usage.input_total,
-                         "cache": r.usage.input_cached, "full_offload": r.effective.get("full_offload")}
-                        for r in records]
+        observations = [
+            {
+                "cell_id": r.cell_id,
+                "prompt_id": r.prompt_id,
+                "status": r.status,
+                "run_mode": r.run_mode,
+                "prompt_hash": r.prompt_hash,
+                "input": r.usage.input_total,
+                "cache": r.usage.input_cached,
+                "full_offload": r.effective.get("full_offload"),
+            }
+            for r in records
+        ]
         gate = equivalence(observations, config)
         result["equivalence"] = gate
         result["cache_counts"] = {}
         for r in records:
             result["cache_counts"].setdefault(r.cell_id, {}).setdefault(r.run_mode, {})[
-                r.prompt_hash] = r.usage.input_cached
+                r.prompt_hash
+            ] = r.usage.input_cached
         result["failures"].extend(gate["failures"])
         for r in records:
-            if any(r.metrics.get(k) is None or r.metrics[k].value is None
-                   for k in ("prefill_tok_s", "decode_tok_s", "peak_request_vram_bytes")):
+            if any(
+                r.metrics.get(k) is None or r.metrics[k].value is None
+                for k in ("prefill_tok_s", "decode_tok_s", "peak_request_vram_bytes")
+            ):
                 result["failures"].append(f"{r.trial_id}: required native/VRAM metric missing")
         overhead = monitor_overhead(pilot, counts, output / "overhead")
         result["monitor_overhead"] = overhead
         if not overhead["passed"]:
-            result["failures"].append("monitor overhead >3%; recalibrate interval then repeat pilot")
+            result["failures"].append(
+                "monitor overhead >3%; recalibrate interval then repeat pilot"
+            )
         if config.experiment == "model":
             if len(config.cells) < 3:
                 result["failures"].append("model experiment needs at least three models")
@@ -175,18 +253,34 @@ def preflight(config: CampaignConfig, output: Path) -> dict:
                 # Require attributable owned process VRAM in addition to global pressure.
                 pids = set(r.effective.get("owned_pids", []))
                 samples = read_jsonl(store.safe_path(r.paths["gpu.jsonl"]))
-                attributable = [sum(p["used_bytes"] for p in (s.get("processes") or [])
-                                    if p["pid"] in pids and p["used_bytes"] is not None) for s in samples]
+                attributable = [
+                    sum(
+                        p["used_bytes"]
+                        for p in (s.get("processes") or [])
+                        if p["pid"] in pids and p["used_bytes"] is not None
+                    )
+                    for s in samples
+                ]
                 idle = r.metrics.get("idle_vram_bytes")
-                if (peak and peak.value is not None and peak.value >= 0.8 * device["total_bytes"]
-                        and attributable and idle and idle.value is not None
-                        and max(attributable) >= peak.value - idle.value - 64 * 1024**2
-                        and max(attributable) >= 0.8 * (device["total_bytes"] - idle.value)):
+                if (
+                    peak
+                    and peak.value is not None
+                    and peak.value >= 0.8 * device["total_bytes"]
+                    and attributable
+                    and idle
+                    and idle.value is not None
+                    and max(attributable) >= peak.value - idle.value - 64 * 1024**2
+                    and max(attributable) >= 0.8 * (device["total_bytes"] - idle.value)
+                ):
                     near.append(r.model_id)
             result["near_limit_models"] = sorted(set(near))
             if not near:
                 result["failures"].append("no measured, attributable full-offload near-limit model")
-        if config.experiment == "quantization" and {c.model.quant for c in config.cells} != {"F16", "Q8_0", "Q4_K_M"}:
+        if config.experiment == "quantization" and {c.model.quant for c in config.cells} != {
+            "F16",
+            "Q8_0",
+            "Q4_K_M",
+        }:
             result["failures"].append("quantization baseline must include F16/Q8_0/Q4_K_M")
         result["passed"] = bool(records) and not result["failures"]
     except Exception as exc:
