@@ -1,0 +1,6 @@
+{"casefold": false, "expected": "red", "id": "exact_00", "scorer": "exact"}
+{"absolute_tolerance": 1e-06, "expected": 13, "id": "numeric_00", "relative_tolerance": 0.0, "scorer": "numeric"}
+{"expected": {"age": 18, "name": "person0"}, "id": "json_00", "scorer": "json"}
+{"casefold": false, "expected": "blue", "id": "exact_01", "scorer": "exact"}
+{"absolute_tolerance": 1e-06, "expected": 19, "id": "numeric_01", "relative_tolerance": 0.0, "scorer": "numeric"}
+{"expected": {"age": 19, "name": "person1"}, "id": "json_01", "scorer": "json"}

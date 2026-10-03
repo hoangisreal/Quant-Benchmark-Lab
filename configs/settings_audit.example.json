@@ -1,0 +1,24 @@
+{
+  "ollama": {
+    "reviewed": false,
+    "binary_sha256": null,
+    "source_references": [],
+    "samplers": false,
+    "kv_f16": false,
+    "batch": false,
+    "no_speculation": false,
+    "bos_policy": false,
+    "truncate_disabled": false
+  },
+  "llamacpp": {
+    "reviewed": false,
+    "binary_sha256": null,
+    "source_references": [],
+    "samplers": false,
+    "kv_f16": false,
+    "batch": false,
+    "no_speculation": false,
+    "bos_policy": false,
+    "truncate_disabled": false
+  }
+}

@@ -1,0 +1,29 @@
+name: model
+experiment: model
+synthetic: false
+deployment: gpu
+stage: pilot
+runtime: ../runtime.yaml
+protocol: ../protocol.yaml
+generation: ../generation.yaml
+catalog: ../models.yaml
+performance_path: ../../data/performance/prompts.jsonl
+quality_path: ../../data/quality/items.jsonl
+answers_path: ../../data/quality/answers.jsonl
+cells:
+- id: qwen-0_5b
+  engine: llamacpp
+  model_id: qwen-0_5b
+  quant: Q4_K_M
+- id: qwen-1_5b
+  engine: llamacpp
+  model_id: qwen-1_5b
+  quant: Q4_K_M
+- id: qwen-3b
+  engine: llamacpp
+  model_id: qwen-3b
+  quant: Q4_K_M
+- id: qwen-4b
+  engine: llamacpp
+  model_id: qwen-4b
+  quant: Q4_K_M

@@ -1,0 +1,25 @@
+name: Python correctness
+on: [push, pull_request]
+jobs:
+  correctness:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: '3.11'
+      - name: Resolve dependencies until the initial lock can be committed
+        run: |
+          if [ ! -f uv.lock ]; then uv lock; fi
+          uv sync --frozen --group dev
+      - name: Lint and test
+        run: |
+          uv run ruff check .
+          uv run python -m unittest discover -s tests -v
+      - name: CLI campaign demonstration
+        run: |
+          uv run qbl plan --config configs/demo.yaml --output /tmp/schedule.json
+          uv run qbl run --schedule /tmp/schedule.json --campaign /tmp/campaign
+          uv run qbl evaluate --campaign /tmp/campaign
+          uv run qbl report --campaign /tmp/campaign --output /tmp/report
+          uv run qbl audit --campaign /tmp/campaign

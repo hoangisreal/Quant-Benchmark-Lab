@@ -1,0 +1,6 @@
+{
+  "state": "unresolved",
+  "llamacpp_commit": null,
+  "reason": "No installed serving binaries or reviewed source audits; run bootstrap/pin on the lab host.",
+  "settings_audit": {}
+}

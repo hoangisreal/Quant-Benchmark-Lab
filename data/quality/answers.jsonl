@@ -1,0 +1,60 @@
+{"casefold": false, "expected": "red", "id": "exact_00", "scorer": "exact"}
+{"absolute_tolerance": 1e-06, "expected": 13, "id": "numeric_00", "relative_tolerance": 0.0, "scorer": "numeric"}
+{"expected": {"age": 18, "name": "person0"}, "id": "json_00", "scorer": "json"}
+{"casefold": false, "expected": "blue", "id": "exact_01", "scorer": "exact"}
+{"absolute_tolerance": 1e-06, "expected": 19, "id": "numeric_01", "relative_tolerance": 0.0, "scorer": "numeric"}
+{"expected": {"age": 19, "name": "person1"}, "id": "json_01", "scorer": "json"}
+{"casefold": false, "expected": "green", "id": "exact_02", "scorer": "exact"}
+{"absolute_tolerance": 1e-06, "expected": 27, "id": "numeric_02", "relative_tolerance": 0.0, "scorer": "numeric"}
+{"expected": {"age": 20, "name": "person2"}, "id": "json_02", "scorer": "json"}
+{"casefold": false, "expected": "yellow", "id": "exact_03", "scorer": "exact"}
+{"absolute_tolerance": 1e-06, "expected": 37, "id": "numeric_03", "relative_tolerance": 0.0, "scorer": "numeric"}
+{"expected": {"age": 21, "name": "person3"}, "id": "json_03", "scorer": "json"}
+{"casefold": false, "expected": "black", "id": "exact_04", "scorer": "exact"}
+{"absolute_tolerance": 1e-06, "expected": 49, "id": "numeric_04", "relative_tolerance": 0.0, "scorer": "numeric"}
+{"expected": {"age": 22, "name": "person4"}, "id": "json_04", "scorer": "json"}
+{"casefold": false, "expected": "red", "id": "exact_05", "scorer": "exact"}
+{"absolute_tolerance": 1e-06, "expected": 63, "id": "numeric_05", "relative_tolerance": 0.0, "scorer": "numeric"}
+{"expected": {"age": 23, "name": "person5"}, "id": "json_05", "scorer": "json"}
+{"casefold": false, "expected": "blue", "id": "exact_06", "scorer": "exact"}
+{"absolute_tolerance": 1e-06, "expected": 79, "id": "numeric_06", "relative_tolerance": 0.0, "scorer": "numeric"}
+{"expected": {"age": 24, "name": "person6"}, "id": "json_06", "scorer": "json"}
+{"casefold": false, "expected": "green", "id": "exact_07", "scorer": "exact"}
+{"absolute_tolerance": 1e-06, "expected": 27, "id": "numeric_07", "relative_tolerance": 0.0, "scorer": "numeric"}
+{"expected": {"age": 25, "name": "person7"}, "id": "json_07", "scorer": "json"}
+{"casefold": false, "expected": "yellow", "id": "exact_08", "scorer": "exact"}
+{"absolute_tolerance": 1e-06, "expected": 40, "id": "numeric_08", "relative_tolerance": 0.0, "scorer": "numeric"}
+{"expected": {"age": 26, "name": "person8"}, "id": "json_08", "scorer": "json"}
+{"casefold": false, "expected": "black", "id": "exact_09", "scorer": "exact"}
+{"absolute_tolerance": 1e-06, "expected": 55, "id": "numeric_09", "relative_tolerance": 0.0, "scorer": "numeric"}
+{"expected": {"age": 27, "name": "person9"}, "id": "json_09", "scorer": "json"}
+{"casefold": false, "expected": "red", "id": "exact_10", "scorer": "exact"}
+{"absolute_tolerance": 1e-06, "expected": 72, "id": "numeric_10", "relative_tolerance": 0.0, "scorer": "numeric"}
+{"expected": {"age": 28, "name": "person10"}, "id": "json_10", "scorer": "json"}
+{"casefold": false, "expected": "blue", "id": "exact_11", "scorer": "exact"}
+{"absolute_tolerance": 1e-06, "expected": 91, "id": "numeric_11", "relative_tolerance": 0.0, "scorer": "numeric"}
+{"expected": {"age": 29, "name": "person11"}, "id": "json_11", "scorer": "json"}
+{"casefold": false, "expected": "green", "id": "exact_12", "scorer": "exact"}
+{"absolute_tolerance": 1e-06, "expected": 112, "id": "numeric_12", "relative_tolerance": 0.0, "scorer": "numeric"}
+{"expected": {"age": 30, "name": "person12"}, "id": "json_12", "scorer": "json"}
+{"casefold": false, "expected": "yellow", "id": "exact_13", "scorer": "exact"}
+{"absolute_tolerance": 1e-06, "expected": 135, "id": "numeric_13", "relative_tolerance": 0.0, "scorer": "numeric"}
+{"expected": {"age": 31, "name": "person13"}, "id": "json_13", "scorer": "json"}
+{"casefold": false, "expected": "black", "id": "exact_14", "scorer": "exact"}
+{"absolute_tolerance": 1e-06, "expected": 41, "id": "numeric_14", "relative_tolerance": 0.0, "scorer": "numeric"}
+{"expected": {"age": 32, "name": "person14"}, "id": "json_14", "scorer": "json"}
+{"casefold": false, "expected": "red", "id": "exact_15", "scorer": "exact"}
+{"absolute_tolerance": 1e-06, "expected": 61, "id": "numeric_15", "relative_tolerance": 0.0, "scorer": "numeric"}
+{"expected": {"age": 33, "name": "person15"}, "id": "json_15", "scorer": "json"}
+{"casefold": false, "expected": "blue", "id": "exact_16", "scorer": "exact"}
+{"absolute_tolerance": 1e-06, "expected": 83, "id": "numeric_16", "relative_tolerance": 0.0, "scorer": "numeric"}
+{"expected": {"age": 34, "name": "person16"}, "id": "json_16", "scorer": "json"}
+{"casefold": false, "expected": "green", "id": "exact_17", "scorer": "exact"}
+{"absolute_tolerance": 1e-06, "expected": 107, "id": "numeric_17", "relative_tolerance": 0.0, "scorer": "numeric"}
+{"expected": {"age": 35, "name": "person17"}, "id": "json_17", "scorer": "json"}
+{"casefold": false, "expected": "yellow", "id": "exact_18", "scorer": "exact"}
+{"absolute_tolerance": 1e-06, "expected": 133, "id": "numeric_18", "relative_tolerance": 0.0, "scorer": "numeric"}
+{"expected": {"age": 36, "name": "person18"}, "id": "json_18", "scorer": "json"}
+{"casefold": false, "expected": "black", "id": "exact_19", "scorer": "exact"}
+{"absolute_tolerance": 1e-06, "expected": 161, "id": "numeric_19", "relative_tolerance": 0.0, "scorer": "numeric"}
+{"expected": {"age": 37, "name": "person19"}, "id": "json_19", "scorer": "json"}

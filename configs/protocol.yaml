@@ -1,0 +1,6 @@
+state: draft
+cold_repetitions: 5
+warm_repetitions: 10
+warm_sessions: 2
+warmups: 2
+schedule_seed: 20261002

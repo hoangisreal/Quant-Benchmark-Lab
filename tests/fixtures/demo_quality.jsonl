@@ -1,0 +1,6 @@
+{"category": "exact", "id": "exact_00", "scorer": "exact", "text": "Return only the word at position 2 (positions start at 1) in this list: gray, red, white."}
+{"category": "numeric", "id": "numeric_00", "scorer": "numeric", "text": "Calculate (3 * 2) + 7. Return only the number, without units or explanation."}
+{"category": "structured", "id": "json_00", "scorer": "json", "text": "Extract exactly name and age as a JSON object. Name: person0; age: 18. Return only JSON with no extra fields."}
+{"category": "exact", "id": "exact_01", "scorer": "exact", "text": "Return only the word at position 2 (positions start at 1) in this list: gray, blue, white."}
+{"category": "numeric", "id": "numeric_01", "scorer": "numeric", "text": "Calculate (4 * 3) + 7. Return only the number, without units or explanation."}
+{"category": "structured", "id": "json_01", "scorer": "json", "text": "Extract exactly name and age as a JSON object. Name: person1; age: 19. Return only JSON with no extra fields."}

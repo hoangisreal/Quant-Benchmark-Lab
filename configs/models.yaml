@@ -1,0 +1,122 @@
+qwen-0_5b:
+  id: qwen-0_5b
+  source_repo: Qwen/Qwen2.5-0.5B-Instruct
+  revision: null
+  license: null
+  template: '<|im_start|>user
+
+    {prompt}<|im_end|>
+
+    <|im_start|>assistant
+
+    '
+  thinking: not_applicable
+  stop:
+  - <|im_end|>
+  - <|endoftext|>
+  artifacts:
+    F16:
+      path: ../models/gguf/qwen-0_5b/F16.gguf
+      sha256: null
+      provenance_path: ../models/gguf/qwen-0_5b/F16.json
+    Q8_0:
+      path: ../models/gguf/qwen-0_5b/Q8_0.gguf
+      sha256: null
+      provenance_path: ../models/gguf/qwen-0_5b/Q8_0.json
+    Q4_K_M:
+      path: ../models/gguf/qwen-0_5b/Q4_K_M.gguf
+      sha256: null
+      provenance_path: ../models/gguf/qwen-0_5b/Q4_K_M.json
+qwen-1_5b:
+  id: qwen-1_5b
+  source_repo: Qwen/Qwen2.5-1.5B-Instruct
+  revision: null
+  license: null
+  template: '<|im_start|>user
+
+    {prompt}<|im_end|>
+
+    <|im_start|>assistant
+
+    '
+  thinking: not_applicable
+  stop:
+  - <|im_end|>
+  - <|endoftext|>
+  artifacts:
+    F16:
+      path: ../models/gguf/qwen-1_5b/F16.gguf
+      sha256: null
+      provenance_path: ../models/gguf/qwen-1_5b/F16.json
+    Q8_0:
+      path: ../models/gguf/qwen-1_5b/Q8_0.gguf
+      sha256: null
+      provenance_path: ../models/gguf/qwen-1_5b/Q8_0.json
+    Q4_K_M:
+      path: ../models/gguf/qwen-1_5b/Q4_K_M.gguf
+      sha256: null
+      provenance_path: ../models/gguf/qwen-1_5b/Q4_K_M.json
+qwen-3b:
+  id: qwen-3b
+  source_repo: Qwen/Qwen2.5-3B-Instruct
+  revision: null
+  license: null
+  template: '<|im_start|>user
+
+    {prompt}<|im_end|>
+
+    <|im_start|>assistant
+
+    '
+  thinking: not_applicable
+  stop:
+  - <|im_end|>
+  - <|endoftext|>
+  artifacts:
+    F16:
+      path: ../models/gguf/qwen-3b/F16.gguf
+      sha256: null
+      provenance_path: ../models/gguf/qwen-3b/F16.json
+    Q8_0:
+      path: ../models/gguf/qwen-3b/Q8_0.gguf
+      sha256: null
+      provenance_path: ../models/gguf/qwen-3b/Q8_0.json
+    Q4_K_M:
+      path: ../models/gguf/qwen-3b/Q4_K_M.gguf
+      sha256: null
+      provenance_path: ../models/gguf/qwen-3b/Q4_K_M.json
+qwen-4b:
+  id: qwen-4b
+  source_repo: Qwen/Qwen3-4B
+  revision: null
+  license: null
+  template: '<|im_start|>user
+
+    {prompt}<|im_end|>
+
+    <|im_start|>assistant
+
+    <think>
+
+
+    </think>
+
+
+    '
+  thinking: disabled
+  stop:
+  - <|im_end|>
+  - <|endoftext|>
+  artifacts:
+    F16:
+      path: ../models/gguf/qwen-4b/F16.gguf
+      sha256: null
+      provenance_path: ../models/gguf/qwen-4b/F16.json
+    Q8_0:
+      path: ../models/gguf/qwen-4b/Q8_0.gguf
+      sha256: null
+      provenance_path: ../models/gguf/qwen-4b/Q8_0.json
+    Q4_K_M:
+      path: ../models/gguf/qwen-4b/Q4_K_M.gguf
+      sha256: null
+      provenance_path: ../models/gguf/qwen-4b/Q4_K_M.json

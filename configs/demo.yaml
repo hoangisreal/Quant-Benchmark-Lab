@@ -1,0 +1,26 @@
+name: demo
+experiment: engine
+synthetic: true
+deployment: cpu
+stage: synthetic
+runtime: runtime.yaml
+protocol:
+  state: draft
+  cold_repetitions: 2
+  warm_repetitions: 4
+  warm_sessions: 2
+  warmups: 2
+generation: generation.yaml
+catalog: models.yaml
+performance_path: ../tests/fixtures/demo_performance.jsonl
+quality_path: ../tests/fixtures/demo_quality.jsonl
+answers_path: ../tests/fixtures/demo_answers.jsonl
+cells:
+- id: ollama
+  engine: ollama
+  model_id: qwen-1_5b
+  quant: Q4_K_M
+- id: llamacpp
+  engine: llamacpp
+  model_id: qwen-1_5b
+  quant: Q4_K_M

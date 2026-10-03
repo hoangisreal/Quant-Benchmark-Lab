@@ -1,0 +1,12 @@
+context_size: 4096
+threads: physical
+batch_size: 128
+microbatch_size: 128
+kv_type: f16
+flash_attention: false
+gpu_index: 0
+ollama_binary: ollama
+llama_binary: ../vendor/llama.cpp/build/bin/llama-server
+ollama_port: 11435
+llama_port: 8081
+toolchain_lock: ../locks/toolchain.json

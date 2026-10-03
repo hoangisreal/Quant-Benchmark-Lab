@@ -1,0 +1,12 @@
+temperature: 0.0
+seed: 42
+top_k: 1
+top_p: 1.0
+min_p: 0.0
+repeat_penalty: 1.0
+repeat_last_n: 0
+presence_penalty: 0.0
+frequency_penalty: 0.0
+mirostat: 0
+performance_max_tokens: 128
+quality_max_tokens: 256

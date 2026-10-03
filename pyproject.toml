@@ -1,0 +1,38 @@
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+
+[project]
+name = "quant-benchmark-lab"
+version = "0.1.0"
+description = "Reproducible, streaming GGUF benchmarks with explicit measurement provenance"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "httpx>=0.28,<0.29", "pydantic>=2.10,<3", "PyYAML>=6,<7",
+  "psutil>=7,<8", "nvidia-ml-py>=12,<14", "numpy>=2,<3", "matplotlib>=3.9,<4",
+]
+
+[project.scripts]
+qbl = "quant_benchmark_lab.cli:main"
+
+[dependency-groups]
+dev = ["pytest>=8,<10", "ruff>=0.12,<1"]
+prepare = ["huggingface-hub>=0.30,<2", "transformers>=4.51,<5", "torch>=2.6,<3", "sentencepiece>=0.2,<1", "gguf>=0.17,<1"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["integration: real engines or full campaign", "gpu: requires the target RTX 3050"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+# Generated results and historical audit probes are artifacts, not maintained source.
+extend-exclude = ["reports", "results", "models", "vendor"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+ignore = ["E501"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/quant_benchmark_lab"]
